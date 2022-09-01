@@ -1,0 +1,21 @@
+name: merge-check
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: ShellCheck
+        run: shellcheck sembump.sh
+      - name: Install shfmt
+        env:
+          SHFMT_VERSION: '3.5.1'
+        run: |
+          curl -sSL "https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_linux_amd64" -o ./shfmt
+          chmod a+x shfmt
+      - name: shfmt
+        run: ./shfmt -d sembump.sh
