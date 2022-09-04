@@ -47,7 +47,7 @@ function reduce_update_type() {
     if [ "$update_type" = 'minor' ]; then
       reduced_type='minor'
     fi
-    if [ "$update_type" = 'patch' ] && [ "$reduced_type" != 'minor'  ]; then
+    if [ "$update_type" = 'patch' ] && [ "$reduced_type" != 'minor' ]; then
       reduced_type='patch'
     fi
   done < <(cat -)
