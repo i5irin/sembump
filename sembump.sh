@@ -27,6 +27,7 @@ function read_update_type() {
     fi
     if [ "$is_breaking" = '!' ]; then
       echo 'major'
+      continue
     fi
     if [ "$commit_type" = 'feat' ]; then
       echo 'minor'
@@ -44,10 +45,9 @@ function reduce_update_type() {
       return 0
     fi
     if [ "$update_type" = 'minor' ]; then
-      echo 'minor'
-      return 0
+      reduced_type='minor'
     fi
-    if [ "$update_type" = 'patch'  ]; then
+    if [ "$update_type" = 'patch' ] && [ "$reduced_type" != 'minor'  ]; then
       reduced_type='patch'
     fi
   done < <(cat -)
