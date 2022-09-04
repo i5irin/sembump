@@ -37,23 +37,24 @@ function read_update_type() {
 }
 
 function reduce_update_type() {
-  minor_or_patch=''
+  reduced_type=''
   while read -r update_type; do
     if [ "$update_type" = 'major' ]; then
       echo 'major'
       return 0
     fi
     if [ "$update_type" = 'minor' ]; then
-      minor_or_patch='minor'
+      echo 'minor'
+      return 0
     fi
-    if [ "$update_type" = 'patch' ]; then
-      minor_or_patch='patch'
+    if [ "$update_type" = 'patch'  ]; then
+      reduced_type='patch'
     fi
   done < <(cat -)
-  if [ -z $minor_or_patch ]; then
+  if [ -z "$reduced_type" ]; then
     return 1
   fi
-  echo "$minor_or_patch"
+  echo "$reduced_type"
 }
 
 function bumpup_version() {
