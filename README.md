@@ -13,7 +13,8 @@ Copy or download and save `sembump.sh` anywhere you like.
 Or redirect from curl and execute as follows:
 
 ```
-curl -Ss https://raw.githubusercontent.com/i5irin/sembump/main/sembump.sh | bash -s 2.1.1 <<< "$update_log"
+echo "$update_log" \
+  | bash <(curl -Ss https://raw.githubusercontent.com/i5irin/sembump/v0.1.1/sembump.sh) 2.1.1
 ```
 
 ## Usage
