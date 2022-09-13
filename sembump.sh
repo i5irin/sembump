@@ -58,9 +58,9 @@ function reduce_update_type() {
 }
 
 function bumpup_version() {
-  current_version="$1"
-  update_type="$2"
-  is_develop="$3"
+  update_type="$1"
+  is_develop="$2"
+  current_version="$3"
   IFS=. read -r major minor patch <<<"$current_version"
   if [ "$is_develop" = '--develop' ] && [ "$major" != '0' ]; then
     echo 'The major version of the development version must be 0.' 1>&2
@@ -91,15 +91,16 @@ function bumpup_version() {
   esac
 }
 
-DEVELOP=''
+CURRENT_VERSION="0.0.0"
+args=()
 while (($# > 0)); do
   case $1 in
   -d | --develop)
-    if [[ -n "$DEVELOP" ]]; then
+    if printf '%s\n' "${args[@]}" | grep -qx -- '--develop'; then
       echo "Duplicated 'option'." 1>&2
       exit 1
     fi
-    DEVELOP='--develop'
+    args+=('--develop')
     ;;
   -*)
     echo "invalid option"
@@ -111,6 +112,7 @@ while (($# > 0)); do
   esac
   shift
 done
+args+=("$CURRENT_VERSION")
 
 export -f bumpup_version
 if [ -p /dev/stdin ]; then
@@ -120,4 +122,4 @@ else
 fi |
   read_update_type |
   reduce_update_type |
-  xargs -I{} bash -c "bumpup_version $CURRENT_VERSION {} $DEVELOP"
+  xargs -I{} bash -c "bumpup_version {} ${args[*]}"
