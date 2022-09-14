@@ -36,8 +36,8 @@ function read_update_type() {
 
 function bumpup_version() {
   update_type="$1"
-  is_develop="$2"
-  current_version="$3"
+  current_version="$2"
+  is_develop="$3"
   IFS=. read -r major minor patch <<<"$current_version"
   if [ "$is_develop" = '--develop' ] && [ "$major" != '0' ]; then
     echo 'The major version of the development version must be 0.' 1>&2
@@ -93,6 +93,9 @@ while (($# > 0)); do
   esac
   shift
 done
+if [ "$CURRENT_VERSION" = '0.0.0' ] && [ -z "$develop_option" ]; then
+  CURRENT_VERSION='1.0.0'
+fi
 
 export -f bumpup_version
 if [ -p /dev/stdin ]; then
@@ -101,4 +104,4 @@ else
   echo "$@"
 fi |
   read_update_type |
-  xargs -I{} bash -c "bumpup_version {} $develop_option $CURRENT_VERSION"
+  xargs -I{} bash -c "bumpup_version {} $CURRENT_VERSION $develop_option"
