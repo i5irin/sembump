@@ -70,6 +70,10 @@ function bumpup_version() {
     echo "1.0.0"
     return 0
   fi
+  if [ "$is_develop" == '--develop' ] && [ "$current_version" = '0.0.0' ]; then
+    echo '0.1.0'
+    return 0
+  fi
   case "$update_type" in
   "major")
     if [ "$is_develop" = '--develop' ]; then
