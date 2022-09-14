@@ -92,15 +92,15 @@ function bumpup_version() {
 }
 
 CURRENT_VERSION="0.0.0"
-args=()
+develop_option=''
 while (($# > 0)); do
   case $1 in
   -d | --develop)
-    if printf '%s\n' "${args[@]}" | grep -qx -- '--develop'; then
+    if [[ -n "$develop_option" ]]; then
       echo "Duplicated 'option'." 1>&2
       exit 1
     fi
-    args+=('--develop')
+    develop_option='--develop'
     ;;
   -*)
     echo "invalid option"
@@ -112,7 +112,6 @@ while (($# > 0)); do
   esac
   shift
 done
-args+=("$CURRENT_VERSION")
 
 export -f bumpup_version
 if [ -p /dev/stdin ]; then
@@ -122,4 +121,4 @@ else
 fi |
   read_update_type |
   reduce_update_type |
-  xargs -I{} bash -c "bumpup_version {} ${args[*]}"
+  xargs -I{} bash -c "bumpup_version {} $develop_option $CURRENT_VERSION"
