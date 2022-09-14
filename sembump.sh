@@ -18,43 +18,20 @@ set -eu
 
 # TODO: Add a flag to treat commits other than Conventional Commits as Patch updates.
 function read_update_type() {
+  update_type=''
   while read -r line; do
     log=$(echo "$line" |
       sed -nr 's/^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-zA-Z_0-9]+\))?(!)?: (.*)$/\1:\3/p')
     IFS=: read -r commit_type is_breaking <<<"$log"
-    if [ -z "$commit_type" ]; then
-      continue
-    fi
     if [ "$is_breaking" = '!' ]; then
-      echo 'major'
-      continue
-    fi
-    if [ "$commit_type" = 'feat' ]; then
-      echo 'minor'
-    else
-      echo 'patch'
+      update_type='major'
+    elif [ "$commit_type" = 'feat' ]; then
+      update_type='minor'
+    elif [ -n "$commit_type" ] && [ "$update_type" != 'major' ] && [ "$update_type" != 'minor' ]; then
+      update_type='patch'
     fi
   done < <(cat -)
-}
-
-function reduce_update_type() {
-  reduced_type=''
-  while read -r update_type; do
-    if [ "$update_type" = 'major' ]; then
-      echo 'major'
-      return 0
-    fi
-    if [ "$update_type" = 'minor' ]; then
-      reduced_type='minor'
-    fi
-    if [ "$update_type" = 'patch' ] && [ "$reduced_type" != 'minor' ]; then
-      reduced_type='patch'
-    fi
-  done < <(cat -)
-  if [ -z "$reduced_type" ]; then
-    return 1
-  fi
-  echo "$reduced_type"
+  echo "$update_type"
 }
 
 function bumpup_version() {
@@ -124,5 +101,4 @@ else
   echo "$@"
 fi |
   read_update_type |
-  reduce_update_type |
   xargs -I{} bash -c "bumpup_version {} $develop_option $CURRENT_VERSION"
