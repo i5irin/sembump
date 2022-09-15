@@ -14,7 +14,7 @@ Or redirect from curl and execute as follows:
 
 ```
 echo "$update_log" \
-  | bash <(curl -Ss https://raw.githubusercontent.com/i5irin/sembump/v0.1.1/sembump.sh) 2.1.1
+  | bash <(curl -Ss https://raw.githubusercontent.com/i5irin/sembump/v0.2.0/sembump.sh) 2.1.1
 ```
 
 ## Usage
