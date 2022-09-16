@@ -42,13 +42,11 @@ function bumpup_version() {
   if [ "$is_develop" = '--develop' ] && [ "$major" != '0' ]; then
     echo 'The major version of the development version must be 0.' 1>&2
     return 1
-  fi
-  if [ "$is_develop" != '--develop' ] && [ "$major" = '0' ]; then
-    echo "1.0.0"
-    return 0
-  fi
-  if [ "$is_develop" == '--develop' ] && [ "$current_version" = '0.0.0' ]; then
+  elif [ "$is_develop" = '--develop' ] && [ "$current_version" = '0.0.0' ]; then
     echo '0.1.0'
+    return 0
+  elif [ "$is_develop" != '--develop' ] && [ "$major" = '0' ]; then
+    echo "1.0.0"
     return 0
   fi
   case "$update_type" in
@@ -59,12 +57,8 @@ function bumpup_version() {
       echo "$((major + 1)).0.0"
     fi
     ;;
-  "minor")
-    echo "$major.$((minor + 1)).0"
-    ;;
-  "patch")
-    echo "$major.$minor.$((patch + 1))"
-    ;;
+  "minor") echo "$major.$((minor + 1)).0" ;;
+  "patch") echo "$major.$minor.$((patch + 1))" ;;
   *)
     echo 'Invalid update type was specified.' 1>&2
     return 1
@@ -72,36 +66,39 @@ function bumpup_version() {
   esac
 }
 
-CURRENT_VERSION="0.0.0"
-develop_option=''
-while (($# > 0)); do
-  case $1 in
-  -d | --develop)
-    if [[ -n "$develop_option" ]]; then
-      echo "Duplicated 'option'." 1>&2
+function main() {
+  if [ ! -p /dev/stdin ]; then
+    echo 'Give the update history from the standard input.'
+    return 1
+  fi
+  local current_version='0.0.0'
+  local develop_option=''
+  while (($# > 0)); do
+    case $1 in
+    -d | --develop)
+      if [[ -n "$develop_option" ]]; then
+        echo "Duplicated 'option'." 1>&2
+        exit 1
+      fi
+      develop_option='--develop'
+      ;;
+    -*)
+      echo "invalid option"
       exit 1
-    fi
-    develop_option='--develop'
-    ;;
-  -*)
-    echo "invalid option"
-    exit 1
-    ;;
-  *)
-    CURRENT_VERSION="$1"
-    ;;
-  esac
-  shift
-done
-if [ "$CURRENT_VERSION" = '0.0.0' ] && [ -z "$develop_option" ]; then
-  CURRENT_VERSION='1.0.0'
-fi
+      ;;
+    *)
+      current_version="$1"
+      ;;
+    esac
+    shift
+  done
+  if [ "$current_version" = '0.0.0' ] && [ -z "$develop_option" ]; then
+    current_version='1.0.0'
+  fi
+  export -f bumpup_version
+  cat - \
+    | read_update_type \
+    | xargs -I{} bash -c "bumpup_version {} $current_version $develop_option"
+}
 
-export -f bumpup_version
-if [ -p /dev/stdin ]; then
-  cat -
-else
-  echo "$@"
-fi |
-  read_update_type |
-  xargs -I{} bash -c "bumpup_version {} $CURRENT_VERSION $develop_option"
+main "$@"
