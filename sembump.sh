@@ -66,12 +66,25 @@ function bumpup_version() {
   esac
 }
 
+function get_current_version() {
+  local version
+  version=$(git tag \
+    | sed -rn 's/v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$)/\1/p' \
+    | sort -Vr \
+    | head -1)
+  if [ -z "$version" ]; then
+    version='0.0.0'
+  fi
+  echo "$version"
+}
+
 function main() {
   if [ ! -p /dev/stdin ]; then
     echo 'Give the update history from the standard input.'
     return 1
   fi
-  local current_version='0.0.0'
+  local current_version
+  current_version=$(get_current_version)
   local develop_option=''
   while (($# > 0)); do
     case $1 in
@@ -82,19 +95,13 @@ function main() {
       fi
       develop_option='--develop'
       ;;
-    -*)
+    *)
       echo "invalid option"
       exit 1
-      ;;
-    *)
-      current_version="$1"
       ;;
     esac
     shift
   done
-  if [ "$current_version" = '0.0.0' ] && [ -z "$develop_option" ]; then
-    current_version='1.0.0'
-  fi
   export -f bumpup_version
   cat - \
     | read_update_type \
