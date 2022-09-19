@@ -39,19 +39,19 @@ function bumpup_version() {
   current_version="$2"
   is_develop="$3"
   IFS=. read -r major minor patch <<<"$current_version"
-  if [ "$is_develop" = '--develop' ] && [ "$major" != '0' ]; then
+  if [ "$is_develop" = 'true' ] && [ "$major" != '0' ]; then
     echo 'The major version of the development version must be 0.' 1>&2
     return 1
-  elif [ "$is_develop" = '--develop' ] && [ "$current_version" = '0.0.0' ]; then
+  elif [ "$is_develop" = 'true' ] && [ "$current_version" = '0.0.0' ]; then
     echo '0.1.0'
     return 0
-  elif [ "$is_develop" != '--develop' ] && [ "$major" = '0' ]; then
+  elif [ "$is_develop" = 'false' ] && [ "$major" = '0' ]; then
     echo "1.0.0"
     return 0
   fi
   case "$update_type" in
   "major")
-    if [ "$is_develop" = '--develop' ]; then
+    if [ "$is_develop" = 'true' ]; then
       echo "$major.$((minor + 1)).0"
     else
       echo "$((major + 1)).0.0"
@@ -83,24 +83,13 @@ function main() {
     echo 'Give the update history from the standard input.'
     return 1
   fi
-  local current_version
+  local current_version develop_option='false'
   current_version=$(get_current_version)
-  local develop_option=''
-  while (($# > 0)); do
-    case $1 in
-    -d | --develop)
-      if [[ -n "$develop_option" ]]; then
-        echo "Duplicated 'option'." 1>&2
-        exit 1
-      fi
-      develop_option='--develop'
-      ;;
-    *)
-      echo "invalid option"
-      exit 1
-      ;;
+  while getopts d OPT; do
+    case $OPT in
+      d) develop_option='true' ;;
+      *) exit 1;;
     esac
-    shift
   done
   export -f bumpup_version
   cat - \
