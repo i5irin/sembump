@@ -66,6 +66,18 @@ function bumpup_version() {
   esac
 }
 
+function get_update_log() {
+  local latest_version="$1" latest_version_sha
+  if [ "$current_version" = '0.0.0' ]; then
+    latest_version_sha=$(git rev-list --max-parents=0 HEAD)
+  else
+    latest_version_sha=$(git rev-parse "v$latest_version")
+  fi
+  git log --pretty=format:'%s:%at' "$(git rev-parse "$latest_version_sha")...HEAD" \
+    | sort -t ':' -k 1,1 -k 3,3 \
+    | sed -nr 's/:[0-9]*$//p'
+}
+
 function get_current_version() {
   local version
   version=$(git tag \
@@ -79,10 +91,6 @@ function get_current_version() {
 }
 
 function main() {
-  if [ ! -p /dev/stdin ]; then
-    echo 'Give the update history from the standard input.'
-    return 1
-  fi
   local current_version develop_option='false'
   current_version=$(get_current_version)
   while getopts d OPT; do
@@ -92,7 +100,7 @@ function main() {
     esac
   done
   export -f bumpup_version
-  cat - \
+  get_update_log "$current_version" \
     | read_update_type \
     | xargs -I{} bash -c "bumpup_version {} $current_version $develop_option"
 }
