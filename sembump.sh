@@ -18,7 +18,7 @@ set -eu
 
 # TODO: Add a flag to treat commits other than Conventional Commits as Patch updates.
 function read_update_type() {
-  update_type=''
+  local update_type=''
   while read -r line; do
     log=$(echo "$line" |
       sed -nr 's/^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-zA-Z_0-9]+\))?(!)?: (.*)$/\1:\3/p')
@@ -35,9 +35,7 @@ function read_update_type() {
 }
 
 function bumpup_version() {
-  update_type="$1"
-  current_version="$2"
-  is_develop="$3"
+  local update_type="$1" current_version="$2" is_develop="$3"
   IFS=. read -r major minor patch <<<"$current_version"
   if [ "$is_develop" = 'true' ] && [ "$major" != '0' ]; then
     echo 'The major version of the development version must be 0.' 1>&2
