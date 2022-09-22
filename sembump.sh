@@ -71,17 +71,17 @@ function get_update_log() {
   else
     latest_version_sha=$(git rev-parse "v$latest_version")
   fi
-  git log --pretty=format:'%s:%at' "$(git rev-parse "$latest_version_sha")...HEAD" \
-    | sort -t ':' -k 1,1 -k 3,3 \
-    | sed -nr 's/:[0-9]*$//p'
+  git log --pretty=format:'%s:%at' "$(git rev-parse "$latest_version_sha")...HEAD" |
+    sort -t ':' -k 1,1 -k 3,3 |
+    sed -nr 's/:[0-9]*$//p'
 }
 
 function get_current_version() {
   local version
-  version=$(git tag \
-    | sed -rn 's/v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$)/\1/p' \
-    | sort -Vr \
-    | head -1)
+  version=$(git tag |
+    sed -rn 's/v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$)/\1/p' |
+    sort -Vr |
+    head -1)
   if [ -z "$version" ]; then
     version='0.0.0'
   fi
@@ -93,8 +93,8 @@ function main() {
   current_version=$(get_current_version)
   while getopts d OPT; do
     case $OPT in
-      d) develop_option='true' ;;
-      *) exit 1;;
+    d) develop_option='true' ;;
+    *) exit 1 ;;
     esac
   done
   update_type=$(get_update_log "$current_version" | read_update_type)
