@@ -89,7 +89,7 @@ function get_current_version() {
 }
 
 function main() {
-  local current_version develop_option='false'
+  local current_version update_type develop_option='false'
   current_version=$(get_current_version)
   while getopts d OPT; do
     case $OPT in
@@ -97,10 +97,8 @@ function main() {
       *) exit 1;;
     esac
   done
-  export -f bumpup_version
-  get_update_log "$current_version" \
-    | read_update_type \
-    | xargs -I{} bash -c "bumpup_version {} $current_version $develop_option"
+  update_type=$(get_update_log "$current_version" | read_update_type)
+  bumpup_version "$update_type" "$current_version" "$develop_option"
 }
 
 main "$@"
