@@ -4,7 +4,7 @@ Bash script to update Semantic Version based on Conventional Commits.
 
 ## Features
 
-Updates the Semantic Version given in the argument based on the type of Conventional Commits in the update history given in the Std-in.  
+Update the last Semantic Version in the git tag based on the type of Conventional Commits from the last version in the git log.
 Switching between 0.x.y development versions is also supported by adding an option.
 
 ## Installation
@@ -13,57 +13,73 @@ Copy or download and save `sembump.sh` anywhere you like.
 Or redirect from curl and execute as follows:
 
 ```
-echo "$update_log" \
-  | bash <(curl -Ss https://raw.githubusercontent.com/i5irin/sembump/v0.2.0/sembump.sh) 2.1.1
+bash <(curl -Ss https://raw.githubusercontent.com/i5irin/sembump/v0.3.0/sembump.sh)
 ```
 
 ## Usage
 
-Update current version 1.2.3 using standard input.
+### Output next version
 
+Run the script with a version tagged starting with "v" or with no tags.
+
+Situation
 ```
-/Path/to/sembump.sh 1.2.3 << EOF
+$ git tag
+v1.2.3
+$ git log --pretty=format:'%s
+feat: add functionality
+fix: fix bugs
+chore: update dependencies
+```
+
+Commands and Outputs
+```
+$ /Path/to/sembump.sh
+1.3.0
+```
+
+If the tag does not exist, v1.0.0 will be taken as the next version.
+
+### Output the next development version
+
+Run the script with the d option with v0.x.y tagged or with no tags.
+
+Situation
+```
+$ git tag
+v0.1.2
+$ git log --pretty=format:'%s
 feat!: add functionality
 fix: fix bugs
 chore: update dependencies
-EOF
 ```
 
-The output will be follows:
-
+Commands and Outputs
 ```
-2.0.0
-```
-
-Update current development version 0.1.2 using standard input.
-
-```
-/Path/to/sembump.sh 0.1.2 --develop << EOF
-feat!: add functionality
-fix: fix bugs
-chore: update dependencies
-EOF
-```
-
-The output will be follows:
-
-```
+$ /Path/to/sembump.sh -d
 0.2.0
 ```
 
-Update the current development version 0.9.7 to 1.0.0 from standard input.
+If the tag does not exist, v0.1.0 will be taken as the next version.  
+**With the development version option, feature updates and breaking changes are treated as minor updates, and bug fixes and other updates are treated as patch updates.**
 
+### Update from the development version to the production version
+
+Run the script without the d option with the v0.x.y tag.
+
+Situation
 ```
-/Path/to/sembump.sh 0.9.7 << EOF
-feat!: add functionality
+$ git tag
+v0.9.7
+$ git log --pretty=format:'%s
+feat: add functionality
 fix: fix bugs
 chore: update dependencies
-EOF
 ```
 
-The output will be follows:
-
+Commands and Outputs
 ```
+$ /Path/to/sembump.sh
 1.0.0
 ```
 

@@ -18,7 +18,7 @@ set -eu
 
 # TODO: Add a flag to treat commits other than Conventional Commits as Patch updates.
 function read_update_type() {
-  update_type=''
+  local update_type=''
   while read -r line; do
     log=$(echo "$line" |
       sed -nr 's/^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-zA-Z_0-9]+\))?(!)?: (.*)$/\1:\3/p')
@@ -35,36 +35,28 @@ function read_update_type() {
 }
 
 function bumpup_version() {
-  update_type="$1"
-  current_version="$2"
-  is_develop="$3"
+  local update_type="$1" current_version="$2" is_develop="$3"
   IFS=. read -r major minor patch <<<"$current_version"
-  if [ "$is_develop" = '--develop' ] && [ "$major" != '0' ]; then
+  if [ "$is_develop" = 'true' ] && [ "$major" != '0' ]; then
     echo 'The major version of the development version must be 0.' 1>&2
     return 1
-  fi
-  if [ "$is_develop" != '--develop' ] && [ "$major" = '0' ]; then
-    echo "1.0.0"
-    return 0
-  fi
-  if [ "$is_develop" == '--develop' ] && [ "$current_version" = '0.0.0' ]; then
+  elif [ "$is_develop" = 'true' ] && [ "$current_version" = '0.0.0' ]; then
     echo '0.1.0'
+    return 0
+  elif [ "$is_develop" = 'false' ] && [ "$major" = '0' ]; then
+    echo "1.0.0"
     return 0
   fi
   case "$update_type" in
   "major")
-    if [ "$is_develop" = '--develop' ]; then
+    if [ "$is_develop" = 'true' ]; then
       echo "$major.$((minor + 1)).0"
     else
       echo "$((major + 1)).0.0"
     fi
     ;;
-  "minor")
-    echo "$major.$((minor + 1)).0"
-    ;;
-  "patch")
-    echo "$major.$minor.$((patch + 1))"
-    ;;
+  "minor") echo "$major.$((minor + 1)).0" ;;
+  "patch") echo "$major.$minor.$((patch + 1))" ;;
   *)
     echo 'Invalid update type was specified.' 1>&2
     return 1
@@ -72,36 +64,41 @@ function bumpup_version() {
   esac
 }
 
-CURRENT_VERSION="0.0.0"
-develop_option=''
-while (($# > 0)); do
-  case $1 in
-  -d | --develop)
-    if [[ -n "$develop_option" ]]; then
-      echo "Duplicated 'option'." 1>&2
-      exit 1
-    fi
-    develop_option='--develop'
-    ;;
-  -*)
-    echo "invalid option"
-    exit 1
-    ;;
-  *)
-    CURRENT_VERSION="$1"
-    ;;
-  esac
-  shift
-done
-if [ "$CURRENT_VERSION" = '0.0.0' ] && [ -z "$develop_option" ]; then
-  CURRENT_VERSION='1.0.0'
-fi
+function get_update_log() {
+  local latest_version="$1" latest_version_sha
+  if [ "$current_version" = '0.0.0' ]; then
+    latest_version_sha=$(git rev-list --max-parents=0 HEAD)
+  else
+    latest_version_sha=$(git rev-parse "v$latest_version")
+  fi
+  git log --pretty=format:'%s:%at' "$(git rev-parse "$latest_version_sha")...HEAD" |
+    sort -t ':' -k 1,1 -k 3,3 |
+    sed -nr 's/:[0-9]*$//p'
+}
 
-export -f bumpup_version
-if [ -p /dev/stdin ]; then
-  cat -
-else
-  echo "$@"
-fi |
-  read_update_type |
-  xargs -I{} bash -c "bumpup_version {} $CURRENT_VERSION $develop_option"
+function get_current_version() {
+  local version
+  version=$(git tag |
+    sed -rn 's/v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$)/\1/p' |
+    sort -Vr |
+    head -1)
+  if [ -z "$version" ]; then
+    version='0.0.0'
+  fi
+  echo "$version"
+}
+
+function main() {
+  local current_version update_type develop_option='false'
+  current_version=$(get_current_version)
+  while getopts d OPT; do
+    case $OPT in
+    d) develop_option='true' ;;
+    *) exit 1 ;;
+    esac
+  done
+  update_type=$(get_update_log "$current_version" | read_update_type)
+  bumpup_version "$update_type" "$current_version" "$develop_option"
+}
+
+main "$@"
