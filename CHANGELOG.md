@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.0 (2022-09-24)
+
+💥 Breaking Change
+
++ get the current version from Git
++ get the update history from Git
+
 ## v0.2.0 (2022-09-16)
 
 🚀 New Feature
