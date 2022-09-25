@@ -31,6 +31,10 @@ function read_update_type() {
       update_type='patch'
     fi
   done < <(cat -)
+  if [ -z "$update_type" ]; then
+    echo 'The type of update could not be read.' 1>&2
+    return 1
+  fi
   echo "$update_type"
 }
 
