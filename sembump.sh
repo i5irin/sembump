@@ -70,7 +70,7 @@ function bumpup_version() {
 
 function get_update_log() {
   local latest_version="$1" latest_version_sha
-  if [ "$current_version" = '0.0.0' ]; then
+  if [ "$latest_version" = '0.0.0' ]; then
     latest_version_sha=$(git rev-list --max-parents=0 HEAD)
   else
     latest_version_sha=$(git rev-parse "v$latest_version")
