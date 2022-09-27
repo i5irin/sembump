@@ -75,7 +75,7 @@ function get_update_log() {
   else
     latest_version_sha=$(git rev-parse "v$latest_version")
   fi
-  git log --pretty=format:'%s:%at' "$(git rev-parse "$latest_version_sha")...HEAD" |
+  git log --pretty=format:'%s:%at' "$latest_version_sha...HEAD" |
     sort -t ':' -k 1,1 -k 3,3 |
     sed -nr 's/:[0-9]*$//p'
 }
