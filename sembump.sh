@@ -69,13 +69,17 @@ function bumpup_version() {
 }
 
 function get_update_log() {
-  local latest_version="$1" latest_version_sha
+  local latest_version="$1" latest_version_sha workspace="$2"
   if [ "$latest_version" = '0.0.0' ]; then
     latest_version_sha=$(git rev-list --max-parents=0 HEAD)
   else
     latest_version_sha=$(git rev-parse "v$latest_version")
   fi
-  git log --pretty=format:'%s:%at' "$latest_version_sha...HEAD" |
+  gitlog=(git log --pretty=format:'%s:%at' "$latest_version_sha...HEAD")
+  if [ -n "$workspace" ]; then
+    gitlog+=("$workspace")
+  fi
+  "${gitlog[@]}" |
     sort -t ':' -k 1,1 -k 3,3 |
     sed -nr 's/:[0-9]*$//p'
 }
@@ -93,15 +97,16 @@ function get_current_version() {
 }
 
 function main() {
-  local current_version update_type develop_option='false'
+  local current_version update_type develop_option='false' workspace=''
   current_version=$(get_current_version)
-  while getopts d OPT; do
+  while getopts dw: OPT; do
     case $OPT in
     d) develop_option='true' ;;
+    w) workspace="$OPTARG" ;;
     *) exit 1 ;;
     esac
   done
-  update_type=$(get_update_log "$current_version" | read_update_type)
+  update_type=$(get_update_log "$current_version" "$workspace" | read_update_type)
   bumpup_version "$update_type" "$current_version" "$develop_option"
 }
 
