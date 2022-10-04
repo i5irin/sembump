@@ -31,32 +31,36 @@ function read_update_type() {
       update_type='patch'
     fi
   done < <(cat -)
+  if [ -z "$update_type" ]; then
+    echo 'The type of update could not be read.' 1>&2
+    return 1
+  fi
   echo "$update_type"
 }
 
 function bumpup_version() {
-  local update_type="$1" current_version="$2" is_develop="$3"
+  local update_type="$1" current_version="$2" is_develop="$3" prefix="$4"
   IFS=. read -r major minor patch <<<"$current_version"
   if [ "$is_develop" = 'true' ] && [ "$major" != '0' ]; then
     echo 'The major version of the development version must be 0.' 1>&2
     return 1
   elif [ "$is_develop" = 'true' ] && [ "$current_version" = '0.0.0' ]; then
-    echo '0.1.0'
+    echo "${prefix}0.1.0"
     return 0
   elif [ "$is_develop" = 'false' ] && [ "$major" = '0' ]; then
-    echo "1.0.0"
+    echo "${prefix}1.0.0"
     return 0
   fi
   case "$update_type" in
   "major")
     if [ "$is_develop" = 'true' ]; then
-      echo "$major.$((minor + 1)).0"
+      echo "${prefix}$major.$((minor + 1)).0"
     else
-      echo "$((major + 1)).0.0"
+      echo "${prefix}$((major + 1)).0.0"
     fi
     ;;
-  "minor") echo "$major.$((minor + 1)).0" ;;
-  "patch") echo "$major.$minor.$((patch + 1))" ;;
+  "minor") echo "${prefix}$major.$((minor + 1)).0" ;;
+  "patch") echo "${prefix}$major.$minor.$((patch + 1))" ;;
   *)
     echo 'Invalid update type was specified.' 1>&2
     return 1
@@ -65,21 +69,30 @@ function bumpup_version() {
 }
 
 function get_update_log() {
-  local latest_version="$1" latest_version_sha
-  if [ "$current_version" = '0.0.0' ]; then
+  local latest_version="$1" latest_version_sha workspace="$2" prefix="$3"
+  if [ "$latest_version" = '0.0.0' ]; then
     latest_version_sha=$(git rev-list --max-parents=0 HEAD)
   else
-    latest_version_sha=$(git rev-parse "v$latest_version")
+    latest_version_sha=$(git rev-parse "$prefix$latest_version")
   fi
-  git log --pretty=format:'%s:%at' "$(git rev-parse "$latest_version_sha")...HEAD" |
+  gitlog=(git log "--pretty=format:"'%s:%at' "$latest_version_sha...HEAD")
+  if [ -n "$workspace" ]; then
+    gitlog+=("$workspace")
+  fi
+  "${gitlog[@]}" |
     sort -t ':' -k 1,1 -k 3,3 |
     sed -nr 's/:[0-9]*$//p'
 }
 
+function escape_sed_keyword() {
+  echo "$1" | sed -e 's/[]\/$*.^[]/\\&/g'
+}
+
 function get_current_version() {
-  local version
+  local version prefix
+  prefix=$(escape_sed_keyword "$1")
   version=$(git tag |
-    sed -rn 's/v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$)/\1/p' |
+    sed -rn "s/^$prefix((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$)/\1/p" |
     sort -Vr |
     head -1)
   if [ -z "$version" ]; then
@@ -89,16 +102,18 @@ function get_current_version() {
 }
 
 function main() {
-  local current_version update_type develop_option='false'
-  current_version=$(get_current_version)
-  while getopts d OPT; do
+  local current_version update_type develop_option='false' workspace='' prefix=''
+  while getopts dw:p: OPT; do
     case $OPT in
     d) develop_option='true' ;;
+    w) workspace="$OPTARG" ;;
+    p) prefix="$OPTARG" ;;
     *) exit 1 ;;
     esac
   done
-  update_type=$(get_update_log "$current_version" | read_update_type)
-  bumpup_version "$update_type" "$current_version" "$develop_option"
+  current_version=$(get_current_version "$prefix")
+  update_type=$(get_update_log "$current_version" "$workspace" "$prefix" | read_update_type)
+  bumpup_version "$update_type" "$current_version" "$develop_option" "$prefix"
 }
 
 main "$@"
