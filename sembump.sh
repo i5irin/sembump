@@ -75,7 +75,7 @@ function get_update_log() {
   else
     latest_version_sha=$(git rev-parse "$prefix$latest_version")
   fi
-  gitlog=(git log --pretty=format:'%s:%at' "$latest_version_sha...HEAD")
+  gitlog=(git log "--pretty=format:"'%s:%at' "$latest_version_sha...HEAD")
   if [ -n "$workspace" ]; then
     gitlog+=("$workspace")
   fi
